@@ -7,9 +7,7 @@ import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 
-os.environ.setdefault(
-	'DATABASE_URL', 'postgresql+asyncpg://korus:korus@localhost:5432/korus_test'
-)
+os.environ.setdefault('DATABASE_URL', 'postgresql+asyncpg://korus:korus@localhost:5432/korus_test')
 os.environ.setdefault('JWT_SECRET_KEY', 'test-secret')
 
 from sqlalchemy import text  # noqa: E402
@@ -31,9 +29,7 @@ def base_url() -> str | None:
 @pytest_asyncio.fixture
 async def client(base_url: str | None) -> AsyncGenerator[AsyncClient, None]:
 	if base_url:
-		async with AsyncClient(
-			base_url=base_url, timeout=DEFAULT_TIMEOUT_SECONDS
-		) as http_client:
+		async with AsyncClient(base_url=base_url, timeout=DEFAULT_TIMEOUT_SECONDS) as http_client:
 			yield http_client
 	else:
 		transport = ASGITransport(app=app)
