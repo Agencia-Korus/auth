@@ -57,7 +57,7 @@ dev = [
 ]
 
 [tool.ruff]
-line-length = 88
+line-length = 99
 
 [tool.ruff.lint]
 preview = true
