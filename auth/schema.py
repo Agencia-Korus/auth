@@ -75,13 +75,14 @@ class RegisterRequest(BaseModel):
 		}
 	)
 
-	class LoginRequest(BaseModel):
-		email: EmailStr
-		senha: str
 
-		model_config = ConfigDict(
-			json_schema_extra={'example': {'email': 'admin@email.com', 'senha': 'AdminKorus@123'}}
-		)
+class LoginRequest(BaseModel):
+	email: EmailStr
+	senha: str
+
+	model_config = ConfigDict(
+		json_schema_extra={'example': {'email': 'admin@email.com', 'senha': 'AdminKorus@123'}}
+	)
 
 
 class RefreshRequest(BaseModel):
