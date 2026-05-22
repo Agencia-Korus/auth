@@ -45,7 +45,7 @@ def create_access_token(subject: int, role: str) -> str:
 
 def create_refresh_token(subject: int) -> str:
 	return _create_token(
-		subject, TOKEN_TYPE_ACESS, timedelta(days=_settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS)
+		subject, TOKEN_TYPE_REFRESH, timedelta(days=_settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS)
 	)
 
 
