@@ -9,21 +9,20 @@ settings = get_settings()
 
 
 class Base(DeclarativeBase):
-    pass
+	pass
 
 
-engine = create_async_engine(
-    url=settings.DATABASE_URL, echo=settings.DEBUG, pool_pre_ping=True
-)
+engine = create_async_engine(url=settings.DATABASE_URL, echo=settings.DEBUG, pool_pre_ping=True)
 
 AsyncSessionLocal = async_sessionmaker(
-    bind=engine, class_=AsyncSession, autoflush=False, expire_on_commit=False
+	bind=engine, class_=AsyncSession, autoflush=False, expire_on_commit=False
 )
 
+
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
-    async with AsyncSessionLocal() as session:
-        try:
-            yield session
-        except  Exception:
-            await session.rollback()
-            raise
+	async with AsyncSessionLocal() as session:
+		try:
+			yield session
+		except Exception:
+			await session.rollback()
+			raise
