@@ -24,7 +24,7 @@ A `api/` valida o `access_token` com o **mesmo `JWT_SECRET_KEY`** — por isso a
 ```bash
 cp .env.example .env
 poetry install
-poetry run task run
+poetry run task run  # http://127.0.0.1:8001
 ```
 
 Docker:

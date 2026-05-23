@@ -82,7 +82,7 @@ concurrency= ['thread', 'greenlet']
 lint = 'ruff check'
 pre_format = 'ruff check --fix'
 format = 'ruff format'
-run = 'fastapi dev auth/app.py'
+run = 'fastapi dev auth/app.py --port 8001'
 pre_test = 'task lint'
 test = 'pytest -s -x --cov=auth -vv'
 post_test = 'coverage html'
