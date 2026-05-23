@@ -32,7 +32,7 @@ class AuthService:
 		usuario = Usuario(
 			nome=payload.nome,
 			email=payload.email,
-			senha_hahs=hash_password(payload.senha),
+			senha_hash=hash_password(payload.senha),
 			role=payload.role,
 			telefone=payload.telefone,
 			status=UserStatus.PENDENTE,
