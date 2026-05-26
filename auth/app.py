@@ -21,4 +21,5 @@ app.include_router(auth_router)
 
 @app.get('/health', tags=['Health'])
 async def health():
+	"""Retorna o status básico da API."""
 	return {'status': 'auth api is running...'}

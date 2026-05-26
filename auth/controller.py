@@ -17,6 +17,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl='/auth/login', auto_error=False)
 
 
 def _service(session: Annotated[AsyncSession, Depends(get_session)]) -> AuthService:
+	"""Cria o serviço de autenticação com a sessão atual."""
 	return AuthService(session)
 
 
@@ -27,6 +28,7 @@ async def get_current_user(
 	token: Annotated[str | None, Depends(oauth2_scheme)],
 	session: Annotated[AsyncSession, Depends(get_session)],
 ) -> UsuarioInfo:
+	"""Resolve o usuário autenticado a partir do token Bearer."""
 	if not token:
 		raise CREDENTIALS_EXCEPTION
 	payload = decode_token(token, TOKEN_TYPE_ACESS)
@@ -44,11 +46,13 @@ async def get_current_user(
 	summary='Auto-cadastro público - cria cliente e funcionario pendente',
 )
 async def register(payload: RegisterRequest, service: ServiceDep):
+	"""Registra um novo usuário público."""
 	return await service.register(payload)
 
 
 @router.post('/login', response_model=TokenResponse, summary='Login de usuário ativo')
 async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], service: ServiceDep):
+	"""Autentica usuário ativo e retorna tokens JWT."""
 	payload = LoginRequest(email=form_data.username, senha=form_data.password)
 	_, tokens = await service.login(payload)
 	return tokens
@@ -56,9 +60,11 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], serv
 
 @router.post('/refresh', response_model=TokenResponse)
 async def refresh(payload: RefreshRequest, service: ServiceDep):
+	"""Renova tokens a partir de um refresh token válido."""
 	return await service.refresh(payload.refresh_token)
 
 
 @router.get('/me', response_model=UsuarioInfo, summary='Obtém o perfil autenticado')
 async def me(current_user: Annotated[UsuarioInfo, Depends(get_current_user)]):
+	"""Retorna os dados do usuário autenticado."""
 	return current_user

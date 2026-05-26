@@ -21,6 +21,7 @@ class Settings(BaseSettings):
 	@field_validator('DEBUG', mode='before')
 	@classmethod
 	def parse_debug(cls, value: object) -> object:
+		"""Converte aliases de ambiente de produção para DEBUG falso."""
 		if isinstance(value, str) and value.strip().lower() in {
 			'release',
 			'production',
@@ -34,4 +35,5 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
+	"""Retorna configurações cacheadas da aplicação."""
 	return Settings()

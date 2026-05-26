@@ -23,6 +23,7 @@ from auth.security import (
 	],
 )
 def test_hash_e_verifica_senha(senha: str):
+	"""Garante que senha é hasheada e verificada corretamente."""
 	hashed = hash_password(senha)
 
 	assert hashed != senha
@@ -38,6 +39,7 @@ def test_hash_e_verifica_senha(senha: str):
 	],
 )
 def test_access_token_codifica_role(user_id: int, role: str):
+	"""Garante que access token carrega usuário, role e tipo."""
 	token = create_access_token(user_id, role)
 
 	payload = decode_token(token, TOKEN_TYPE_ACESS)
@@ -48,6 +50,7 @@ def test_access_token_codifica_role(user_id: int, role: str):
 
 
 def test_refresh_token_tipo_correto():
+	"""Garante que refresh token carrega tipo de refresh."""
 	token = create_refresh_token(99)
 
 	payload = decode_token(token, TOKEN_TYPE_REFRESH)
@@ -57,6 +60,7 @@ def test_refresh_token_tipo_correto():
 
 
 def test_decode_token_rejeita_token_malformado():
+	"""Garante que token inválido gera erro de credenciais."""
 	with pytest.raises(HTTPException) as exc_info:
 		decode_token('token-invalido', TOKEN_TYPE_ACESS)
 
@@ -64,6 +68,7 @@ def test_decode_token_rejeita_token_malformado():
 
 
 def test_decode_token_rejeita_tipo_incorreto():
+	"""Garante que token com tipo inesperado é rejeitado."""
 	token = create_refresh_token(99)
 
 	with pytest.raises(HTTPException) as exc_info:

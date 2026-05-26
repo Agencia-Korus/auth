@@ -9,18 +9,22 @@ ADMIN_ACCESS_LEVEL = 7
 
 class FakeSession:
 	def __init__(self):
+		"""Inicializa estado capturado pela sessão falsa."""
 		self.added = []
 		self.flushed = False
 
 	def add(self, item):
+		"""Registra objetos adicionados durante o teste."""
 		self.added.append(item)
 
 	async def flush(self):
+		"""Marca que a sessão falsa recebeu flush."""
 		self.flushed = True
 
 
 @pytest.mark.asyncio
 async def test_create_role_profile_admin_cria_perfil_admin():
+	"""Garante que o branch interno de perfil admin é criado."""
 	session = FakeSession()
 	service = AuthService(session)
 	usuario = Usuario(id=1, nome='Admin', email='admin@example.com', role=UserRole.ADMIN)
