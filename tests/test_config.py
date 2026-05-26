@@ -9,10 +9,7 @@ def test_debug_release_is_false():
 
 
 def test_normalize_postgresql_url_to_asyncpg_dsn():
-	url = (
-		'postgresql://user:pass@example.com:5432/dbname'
-		'?sslmode=require&channel_binding=require'
-	)
+	url = 'postgresql://user:pass@example.com:5432/dbname?sslmode=require&channel_binding=require'
 
 	database_url, connect_args = normalize_async_database_url(url)
 

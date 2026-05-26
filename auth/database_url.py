@@ -12,6 +12,4 @@ def normalize_async_database_url(url: str) -> tuple[str, dict[str, Any]]:
 
 	asyncpg_dsn = parsed_url.set(drivername='postgresql')
 
-	return 'postgresql+asyncpg://', {
-		'dsn': asyncpg_dsn.render_as_string(hide_password=False)
-	}
+	return 'postgresql+asyncpg://', {'dsn': asyncpg_dsn.render_as_string(hide_password=False)}
