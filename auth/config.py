@@ -1,6 +1,7 @@
 from functools import lru_cache
 from typing import Final
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 JWT_DEFAULT_ALGORITHM: Final = 'HS256'
@@ -16,6 +17,17 @@ class Settings(BaseSettings):
 	JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = JWT_ACCESS_TOKEN_EXPIRE_MINUTES
 	JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = JWT_REFRESH_TOKEN_EXPIRE_DAYS
 	CORS_ALLOW_ORIGINS: str = '*'
+
+	@field_validator('DEBUG', mode='before')
+	@classmethod
+	def parse_debug(cls, value: object) -> object:
+		if isinstance(value, str) and value.strip().lower() in {
+			'release',
+			'production',
+			'prod',
+		}:
+			return False
+		return value
 
 	model_config = SettingsConfigDict(env_file='.env', env_file_encoding='utf-8', extra='ignore')
 
