@@ -1,24 +1,42 @@
-import asyncio
 import os
-import socket
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Generator
 
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import (
+	AsyncEngine,
+	AsyncSession,
+	async_sessionmaker,
+	create_async_engine,
+)
+from sqlalchemy.pool import NullPool
+from testcontainers.postgres import PostgresContainer
 
-os.environ.setdefault('DATABASE_URL', 'postgresql+asyncpg://korus:korus@localhost:5432/korus_test')
-os.environ.setdefault('JWT_SECRET_KEY', 'test-secret')
-
-from sqlalchemy import text  # noqa: E402
-
-from auth.app import app  # noqa: E402
-from auth.database import engine  # noqa: E402
+from auth.app import app
+from auth.database import Base, get_session
 
 BASE_URL_ENV = 'KORUS_AUTH_BASE_URL'
 DEFAULT_TIMEOUT_SECONDS = 30
-DEFAULT_DB_PORT = 5432
-SOCKET_CHECK_TIMEOUT = 1
+POSTGRES_IMAGE = 'postgres:18'
+CREATE_USER_ROLE_TYPE = """
+DO $$
+BEGIN
+	CREATE TYPE user_role AS ENUM ('cliente', 'funcionario', 'admin');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END
+$$;
+"""
+CREATE_USER_STATUS_TYPE = """
+DO $$
+BEGIN
+	CREATE TYPE user_status AS ENUM ('ativo', 'inativo', 'pendente');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END
+$$;
+"""
+TRUNCATE_TABLES = 'TRUNCATE TABLE admin, cliente, funcionario, usuario RESTART IDENTITY CASCADE'
 
 
 @pytest.fixture(scope='session')
@@ -41,32 +59,71 @@ async def client(base_url: str | None) -> AsyncGenerator[AsyncClient, None]:
 			yield http_client
 
 
-async def _ping_database() -> bool:
+@pytest.fixture(scope='session')
+def postgres_container() -> Generator[PostgresContainer, None, None]:
+	with PostgresContainer(POSTGRES_IMAGE, driver='asyncpg') as postgres:
+		yield postgres
+
+
+async def _create_test_schema(engine: AsyncEngine) -> None:
+	async with engine.begin() as conn:
+		await conn.execute(text('CREATE EXTENSION IF NOT EXISTS citext'))
+		await conn.execute(text(CREATE_USER_ROLE_TYPE))
+		await conn.execute(text(CREATE_USER_STATUS_TYPE))
+		await conn.run_sync(Base.metadata.create_all)
+
+
+@pytest_asyncio.fixture(scope='session', loop_scope='session')
+async def db_engine(postgres_container: PostgresContainer) -> AsyncGenerator[AsyncEngine, None]:
+	engine = create_async_engine(
+		postgres_container.get_connection_url(),
+		poolclass=NullPool,
+		pool_pre_ping=True,
+	)
+
+	await _create_test_schema(engine)
+
 	try:
-		async with engine.connect() as conn:
-			await conn.execute(text('SELECT 1 FROM usuario LIMIT 1'))
-			return True
-	except Exception:
-		return False
+		yield engine
 	finally:
 		await engine.dispose()
 
 
-def is_postgres_available() -> bool:
-	host = os.environ.get('TEST_DB_HOST', 'localhost')
-	port = int(os.environ.get('TEST_DB_PORT', str(DEFAULT_DB_PORT)))
-	try:
-		with socket.create_connection((host, port), timeout=SOCKET_CHECK_TIMEOUT):
-			pass
-	except OSError:
-		return False
-	try:
-		return asyncio.run(_ping_database())
-	except RuntimeError:
-		return False
+@pytest.fixture
+def db_sessionmaker(db_engine: AsyncEngine) -> async_sessionmaker[AsyncSession]:
+	return async_sessionmaker(
+		bind=db_engine,
+		class_=AsyncSession,
+		autoflush=False,
+		expire_on_commit=False,
+	)
 
 
-requires_db = pytest.mark.skipif(
-	not is_postgres_available(),
-	reason='Postgres com schema aplicado é necessário',
-)
+@pytest_asyncio.fixture
+async def db_client(
+	db_engine: AsyncEngine,
+	db_sessionmaker: async_sessionmaker[AsyncSession],
+) -> AsyncGenerator[AsyncClient, None]:
+	async def override_get_session() -> AsyncGenerator[AsyncSession, None]:
+		async with db_sessionmaker() as session:
+			try:
+				yield session
+			except Exception:
+				await session.rollback()
+				raise
+
+	app.dependency_overrides[get_session] = override_get_session
+
+	transport = ASGITransport(app=app)
+	try:
+		async with AsyncClient(
+			transport=transport,
+			base_url='http://testserver',
+			timeout=DEFAULT_TIMEOUT_SECONDS,
+		) as http_client:
+			yield http_client
+	finally:
+		app.dependency_overrides.pop(get_session, None)
+
+		async with db_engine.begin() as conn:
+			await conn.execute(text(TRUNCATE_TABLES))

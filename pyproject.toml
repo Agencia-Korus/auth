@@ -54,7 +54,8 @@ dev = [
     "httpx (>=0.28.1,<0.29.0)",
     "greenlet (>=3.3.2,<4.0.0)",
     "ruff (>=0.15.9,<0.16.0)",
-    "taskipy (>=1.14.1,<2.0.0)"
+    "taskipy (>=1.14.1,<2.0.0)",
+    "testcontainers[postgres] (>=4.14.2,<5.0.0)"
 ]
 
 [tool.ruff]

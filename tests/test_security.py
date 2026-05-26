@@ -1,4 +1,7 @@
+from http import HTTPStatus
+
 import pytest
+from fastapi import HTTPException
 
 from auth.security import (
 	TOKEN_TYPE_ACESS,
@@ -51,3 +54,19 @@ def test_refresh_token_tipo_correto():
 
 	assert payload['sub'] == '99'
 	assert payload['type'] == TOKEN_TYPE_REFRESH
+
+
+def test_decode_token_rejeita_token_malformado():
+	with pytest.raises(HTTPException) as exc_info:
+		decode_token('token-invalido', TOKEN_TYPE_ACESS)
+
+	assert exc_info.value.status_code == HTTPStatus.UNAUTHORIZED
+
+
+def test_decode_token_rejeita_tipo_incorreto():
+	token = create_refresh_token(99)
+
+	with pytest.raises(HTTPException) as exc_info:
+		decode_token(token, TOKEN_TYPE_ACESS)
+
+	assert exc_info.value.status_code == HTTPStatus.UNAUTHORIZED

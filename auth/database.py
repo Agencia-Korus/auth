@@ -4,7 +4,6 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from sqlalchemy.orm import DeclarativeBase
 
 from auth.config import get_settings
-from auth.database_url import normalize_async_database_url
 
 settings = get_settings()
 
@@ -13,13 +12,10 @@ class Base(DeclarativeBase):
 	pass
 
 
-database_url, connect_args = normalize_async_database_url(settings.DATABASE_URL)
-
 engine = create_async_engine(
-	url=database_url,
+	url=settings.DATABASE_URL,
 	echo=settings.DEBUG,
 	pool_pre_ping=True,
-	connect_args=connect_args,
 )
 
 AsyncSessionLocal = async_sessionmaker(
