@@ -16,10 +16,12 @@ from auth.security import (
 
 class AuthService:
 	def __init__(self, session: AsyncSession):
+		"""Inicializa o serviço com sessão e repositório de usuários."""
 		self.session = session
 		self.repo = UsuarioRepository(session)
 
 	async def register(self, payload: RegisterRequest) -> Usuario:
+		"""Registra usuário público e cria o perfil da role."""
 		if await self.repo.get_by_email(payload.email):
 			raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail='Email já cadastrado')
 		if payload.role == UserRole.ADMIN:
@@ -43,6 +45,7 @@ class AuthService:
 		return usuario
 
 	async def _create_role_profile(self, usuario: Usuario, payload: RegisterRequest) -> None:
+		"""Cria o registro de perfil relacionado à role do usuário."""
 		if usuario.role == UserRole.CLIENTE:
 			cliente = payload.cliente
 			razao_social = usuario.nome
@@ -76,6 +79,7 @@ class AuthService:
 		await self.session.flush()
 
 	async def login(self, payload: LoginRequest) -> tuple[Usuario, TokenResponse]:
+		"""Valida credenciais e emite tokens para usuário ativo."""
 		usuario = await self.repo.get_by_email(payload.email)
 		if not usuario or not verify_password(payload.senha, usuario.senha_hash):
 			raise HTTPException(
@@ -92,6 +96,7 @@ class AuthService:
 		return usuario, tokens
 
 	async def refresh(self, refresh_token: str) -> TokenResponse:
+		"""Emite novo par de tokens a partir de um refresh token."""
 		payload = decode_token(refresh_token, TOKEN_TYPE_REFRESH)
 		usuario = await self.repo.get(int(payload['sub']))
 		if not usuario:

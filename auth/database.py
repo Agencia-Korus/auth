@@ -24,6 +24,7 @@ AsyncSessionLocal = async_sessionmaker(
 
 
 async def get_session() -> AsyncGenerator[AsyncSession, None]:  # pragma: no cover
+	"""Fornece uma sessão assíncrona por requisição."""
 	async with AsyncSessionLocal() as session:
 		try:
 			yield session

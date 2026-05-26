@@ -20,6 +20,7 @@ from auth.database import Base, get_session
 BASE_URL_ENV = 'KORUS_AUTH_BASE_URL'
 DEFAULT_TIMEOUT_SECONDS = 30
 POSTGRES_IMAGE = 'postgres:18'
+
 CREATE_USER_ROLE_TYPE = """
 DO $$
 BEGIN
@@ -28,6 +29,7 @@ EXCEPTION WHEN duplicate_object THEN NULL;
 END
 $$;
 """
+
 CREATE_USER_STATUS_TYPE = """
 DO $$
 BEGIN
@@ -41,11 +43,13 @@ TRUNCATE_TABLES = 'TRUNCATE TABLE admin, cliente, funcionario, usuario RESTART I
 
 @pytest.fixture(scope='session')
 def base_url() -> str | None:
+	"""Retorna a URL externa da API quando os testes apontam para serviço real."""
 	return os.environ.get(BASE_URL_ENV)
 
 
 @pytest_asyncio.fixture
 async def client(base_url: str | None) -> AsyncGenerator[AsyncClient, None]:
+	"""Fornece cliente HTTP para API externa ou app ASGI local."""
 	if base_url:
 		async with AsyncClient(base_url=base_url, timeout=DEFAULT_TIMEOUT_SECONDS) as http_client:
 			yield http_client
@@ -61,11 +65,13 @@ async def client(base_url: str | None) -> AsyncGenerator[AsyncClient, None]:
 
 @pytest.fixture(scope='session')
 def postgres_container() -> Generator[PostgresContainer, None, None]:
+	"""Sobe um Postgres efêmero para a sessão de testes."""
 	with PostgresContainer(POSTGRES_IMAGE, driver='asyncpg') as postgres:
 		yield postgres
 
 
 async def _create_test_schema(engine: AsyncEngine) -> None:
+	"""Prepara extensões, enums e tabelas no banco de teste."""
 	async with engine.begin() as conn:
 		await conn.execute(text('CREATE EXTENSION IF NOT EXISTS citext'))
 		await conn.execute(text(CREATE_USER_ROLE_TYPE))
@@ -75,6 +81,7 @@ async def _create_test_schema(engine: AsyncEngine) -> None:
 
 @pytest_asyncio.fixture(scope='session', loop_scope='session')
 async def db_engine(postgres_container: PostgresContainer) -> AsyncGenerator[AsyncEngine, None]:
+	"""Cria engine assíncrono conectado ao Postgres de teste."""
 	engine = create_async_engine(
 		postgres_container.get_connection_url(),
 		poolclass=NullPool,
@@ -91,6 +98,7 @@ async def db_engine(postgres_container: PostgresContainer) -> AsyncGenerator[Asy
 
 @pytest.fixture
 def db_sessionmaker(db_engine: AsyncEngine) -> async_sessionmaker[AsyncSession]:
+	"""Cria factory de sessões para o banco de teste."""
 	return async_sessionmaker(
 		bind=db_engine,
 		class_=AsyncSession,
@@ -104,7 +112,10 @@ async def db_client(
 	db_engine: AsyncEngine,
 	db_sessionmaker: async_sessionmaker[AsyncSession],
 ) -> AsyncGenerator[AsyncClient, None]:
+	"""Fornece cliente ASGI com dependência de sessão sobrescrita."""
+
 	async def override_get_session() -> AsyncGenerator[AsyncSession, None]:
+		"""Fornece sessões do banco efêmero para as rotas testadas."""
 		async with db_sessionmaker() as session:
 			try:
 				yield session

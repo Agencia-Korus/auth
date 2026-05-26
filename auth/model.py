@@ -31,6 +31,7 @@ class UserStatus(str, Enum):
 
 
 def enum_values(cls: type[Enum]) -> list[str]:
+	"""Retorna os valores serializados de um enum."""
 	return [member.value for member in cls]
 
 

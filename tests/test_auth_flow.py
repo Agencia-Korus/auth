@@ -10,6 +10,7 @@ from auth.security import create_access_token, create_refresh_token
 
 
 def _payload():
+	"""Monta payload único para cadastro de cliente."""
 	suffix = uuid.uuid4().hex[:8]
 
 	return {
@@ -21,6 +22,7 @@ def _payload():
 
 
 def _funcionario_payload():
+	"""Monta payload único para cadastro de funcionário."""
 	payload = _payload()
 	payload['role'] = 'funcionario'
 	payload['funcionario'] = {
@@ -31,6 +33,7 @@ def _funcionario_payload():
 
 
 def _login_form(email: str, senha: str):
+	"""Monta formulário OAuth2 usado pelo endpoint de login."""
 	return {
 		'username': email,
 		'password': senha,
@@ -42,6 +45,7 @@ async def test_fluxo_register_login_refresh_me(
 	db_client: AsyncClient,
 	db_engine: AsyncEngine,
 ):
+	"""Valida o fluxo feliz de cadastro, login, perfil e refresh."""
 	payload = _payload()
 
 	reg = await db_client.post('/auth/register', json=payload)
@@ -108,6 +112,7 @@ async def test_login_invalido(
 	wrong_senha: str,
 	expected_status: HTTPStatus,
 ):
+	"""Garante que senha incorreta não autentica usuário ativo."""
 	payload = _payload()
 
 	reg = await db_client.post('/auth/register', json=payload)
@@ -130,6 +135,7 @@ async def test_login_invalido(
 
 @pytest.mark.asyncio
 async def test_register_rejeita_email_duplicado(db_client: AsyncClient):
+	"""Garante que cadastro com email existente retorna conflito."""
 	payload = _payload()
 
 	first = await db_client.post('/auth/register', json=payload)
@@ -141,6 +147,7 @@ async def test_register_rejeita_email_duplicado(db_client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_register_rejeita_admin(db_client: AsyncClient):
+	"""Garante que auto-cadastro como admin é rejeitado."""
 	payload = _payload()
 	payload['role'] = 'admin'
 
@@ -154,6 +161,7 @@ async def test_register_cliente_com_dados_de_perfil(
 	db_client: AsyncClient,
 	db_engine: AsyncEngine,
 ):
+	"""Garante que dados customizados de cliente são persistidos."""
 	payload = _payload()
 	payload['cliente'] = {
 		'razao_social': 'Cliente Customizado Ltda',
@@ -189,6 +197,7 @@ async def test_register_funcionario_cria_perfil(
 	db_client: AsyncClient,
 	db_engine: AsyncEngine,
 ):
+	"""Garante que cadastro de funcionário cria perfil relacionado."""
 	payload = _funcionario_payload()
 
 	resp = await db_client.post('/auth/register', json=payload)
@@ -215,6 +224,7 @@ async def test_register_funcionario_cria_perfil(
 
 @pytest.mark.asyncio
 async def test_me_sem_token_retorna_unauthorized(db_client: AsyncClient):
+	"""Garante que /auth/me sem Bearer token retorna 401."""
 	resp = await db_client.get('/auth/me')
 
 	assert resp.status_code == HTTPStatus.UNAUTHORIZED, resp.text
@@ -222,6 +232,7 @@ async def test_me_sem_token_retorna_unauthorized(db_client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_me_com_token_de_usuario_inexistente_retorna_unauthorized(db_client: AsyncClient):
+	"""Garante que token de usuário inexistente não autoriza perfil."""
 	token = create_access_token(999_999, 'cliente')
 
 	resp = await db_client.get('/auth/me', headers={'Authorization': f'Bearer {token}'})
@@ -231,6 +242,7 @@ async def test_me_com_token_de_usuario_inexistente_retorna_unauthorized(db_clien
 
 @pytest.mark.asyncio
 async def test_refresh_com_usuario_inexistente_retorna_unauthorized(db_client: AsyncClient):
+	"""Garante que refresh de usuário inexistente retorna 401."""
 	token = create_refresh_token(999_999)
 
 	resp = await db_client.post('/auth/refresh', json={'refresh_token': token})
