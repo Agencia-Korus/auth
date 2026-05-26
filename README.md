@@ -27,7 +27,16 @@ poetry install
 poetry run task run  # http://127.0.0.1:8001
 ```
 
-Docker:
+Docker pelo compose da API:
+
+```bash
+cd ../api
+cp .env.example .env
+touch .env.google-calendar-service-account.json
+docker compose up --build korus-auth
+```
+
+Docker standalone, usando um banco acessível pela `DATABASE_URL` do `.env`:
 
 ```bash
 docker build -t korus-auth .
