@@ -8,9 +8,13 @@ settings = get_settings()
 
 app = FastAPI(title='Korus Auth Sercive', version='0.1.0')
 
+_origens_cors = [o.strip() for o in settings.CORS_ALLOW_ORIGINS.split(',') if o.strip()]
+_liberar_todas_origens = '*' in _origens_cors
+
 app.add_middleware(
 	CORSMiddleware,
-	allow_origins=[o.strip() for o in settings.CORS_ALLOW_ORIGINS.split(',')],
+	allow_origins=[] if _liberar_todas_origens else _origens_cors,
+	allow_origin_regex='.*' if _liberar_todas_origens else None,
 	allow_credentials=True,
 	allow_methods=['*'],
 	allow_headers=['*'],
